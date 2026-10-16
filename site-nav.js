@@ -9,13 +9,13 @@
     };
 
     const pages = [
-        { key: "home", label: "Home", href: "index_resurrection.html" },
+        { key: "home", label: "Home", href: "index.html" },
         { key: "quotes", label: "Quotes", href: "quotes.html" },
         { key: "projects", label: "Projects", href: "project.html" },
         { key: "useless machine", label: "Useless Machine", href: "machine.html" }
     ];
 
-    const currentFile = (window.location.pathname.split("/").pop() || "index_resurrection.html").toLowerCase();
+    const currentFile = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
     const currentKey = currentFile === "quotes.html"
         ? "quotes"
         : currentFile === "project.html"

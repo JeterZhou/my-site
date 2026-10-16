@@ -16,11 +16,8 @@
     ];
 
     const currentFile = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
-    const currentKey = currentFile === "quotes.html"
-        ? "quotes"
-        : currentFile === "project.html"
-            ? "projects"
-            : "home";
+    const currentPage = pages.find(page => page.href.toLowerCase() === currentFile);
+    const currentKey = currentPage ? currentPage.key : "home";
 
     const style = document.createElement("style");
     style.textContent = `
@@ -207,6 +204,11 @@
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(22px);
             -webkit-backdrop-filter: blur(22px);
+        }
+
+        .site-switcher.site-nav-dark {
+            background: rgba(23, 36, 58, 0.78);
+            border-color: rgba(203, 213, 225, 0.2);
         }
 
         .site-switcher.site-nav-light .site-nav-link {

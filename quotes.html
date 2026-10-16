@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Famous Quotes</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            --panel: linear-gradient(135deg, rgba(255,255,255,0.17), rgba(255,255,255,0.06));
+            --panel-soft: rgba(255,255,255,0.055);
+            --panel-border: rgba(255,255,255,0.18);
+            --card-text: #162537;
+            --button-text: #ffffff;
+            --popup-bg: rgba(183, 209, 230, 0.90);
+            --shadow: rgba(45, 73, 96, 0.18);
+
+            width: 100%;
+            min-height: 100vh;
+            height: 100svh;
+            padding: clamp(18px, 3vw, 42px);
+            overflow: hidden;
+            font-family: Georgia, 'Times New Roman', serif;
+
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.28), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(122, 165, 255, 0.28), transparent 35%),
+                linear-gradient(135deg, #94b6d8 0%, #c5d9ef 40%, #a7bfdc 100%);
+
+            transition: background 0.45s ease, color 0.35s ease;
+        }
+
+        body.dark-mode {
+            --panel: linear-gradient(135deg, rgba(255,255,255,0.095), rgba(255,255,255,0.035));
+            --panel-soft: rgba(255,255,255,0.035);
+            --panel-border: rgba(255,255,255,0.13);
+            --card-text: #eef5ff;
+            --button-text: #f5f8ff;
+            --popup-bg: rgba(20, 33, 54, 0.92);
+            --shadow: rgba(0, 0, 0, 0.34);
+
+            background:
+                radial-gradient(circle at top left, rgba(90, 126, 176, 0.18), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(45, 77, 123, 0.24), transparent 38%),
+                linear-gradient(135deg, #0d1626 0%, #17243a 48%, #243750 100%);
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .page {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .hero-screen,
+        .quote-app {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* =========================
+           首页
+        ========================== */
+
+        .hero-screen {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .hero-panel {
+            width: min(760px, 100%);
+            padding: clamp(36px, 6vw, 72px) clamp(28px, 5vw, 56px);
+            border-radius: 30px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 20px 45px var(--shadow);
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .hero-kicker {
+            display: inline-block;
+            margin-bottom: 18px;
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .hero-panel h1 {
+            color: white;
+            font-size: clamp(40px, 5vw, 78px);
+            line-height: 1.08;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .hero-panel p {
+            margin: 18px auto 0;
+            max-width: 560px;
+            color: rgba(255,255,255,0.8);
+            font-size: clamp(16px, 1.6vw, 20px);
+            line-height: 1.8;
+        }
+
+        .hero-button,
+        .utility-btn {
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.10);
+            color: var(--button-text);
+            cursor: pointer;
+            transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-button {
+            margin-top: 28px;
+            padding: 14px 28px;
+            border: none;
+            background: rgba(255,255,255,0.18);
+            font-size: 15px;
+            letter-spacing: 0.08em;
+            box-shadow: 0 8px 24px rgba(72, 101, 136, 0.18);
+        }
+
+        .hero-button:hover,
+        .utility-btn:hover {
+            background: rgba(255,255,255,0.20);
+            border-color: rgba(255,255,255,0.42);
+            transform: translateY(-2px);
+        }
+
+        /* =========================
+           名言页面布局
+        ========================== */
+
+        .quote-app {
+            display: none;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        .page.show-quotes .hero-screen {
+            display: none;
+        }
+
+        .page.show-quotes .quote-app {
+            display: grid;
+        }
+
+        .quote-header-wrap {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 16px;
+        }
+
+        header {
+            width: 100%;
+            padding: clamp(18px, 3vh, 30px) clamp(22px, 4vw, 36px);
+            border-radius: 28px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 18px 40px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.28);
+            backdrop-filter: blur(12px);
+        }
+
+        header h1 {
+            color: white;
+            text-align: center;
+            font-size: clamp(28px, 3vw, 44px);
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-shadow: 0 6px 18px rgba(0,0,0,0.14);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .utility-btn {
+            min-height: 46px;
+            padding: 10px 16px;
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        /* =========================
+           卡片区域
+        ========================== */
+
+        .quote-zone {
+            position: relative;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 28px;
+            background: var(--panel-soft);
+            border: 1px solid rgba(255,255,255,0.10);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+            backdrop-filter: blur(7px);
+        }
+
+        /*
+           卡片尺寸在这里控制：
+           - 总宽度最多 1260px
+           - 总高度最多 560px
+           - 单卡宽度最多 82px
+           因此不会再一直顶到页面底部。
+        */
+        .cards {
+            width: min(82%, 1260px);
+            height: calc(100% - 58px);
+            max-height: 560px;
+            margin: auto;
+
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(8px, 0.8vw, 14px);
+
+            transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
+        }
+
+        .quote-card {
+            position: relative;
+            flex: 1 1 0;
+            min-width: 48px;
+            max-width: 82px;
+            height: 100%;
+
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.075));
+            box-shadow: 0 12px 28px rgba(41,72,99,0.12), inset 0 1px 0 rgba(255,255,255,0.32);
+            color: var(--card-text);
+
+            font-family: inherit;
+            font-size: clamp(13px, 1.05vw, 18px);
+            line-height: 1.15;
+            letter-spacing: 0.08em;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            writing-mode: horizontal-tb;
+            white-space: nowrap;
+            cursor: pointer;
+            overflow: hidden;
+
+            transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        body.dark-mode .quote-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.035));
+            border-color: rgba(255,255,255,0.20);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.12);
+        }
+
+        .quote-card-label {
+            display: inline-block;
+            white-space: nowrap;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        .quote-card::before {
+            content: "";
+            position: absolute;
+            width: 120%;
+            height: 100%;
+            top: 0;
+            left: -130%;
+            background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.22), transparent 70%);
+            transition: left 0.6s ease;
+        }
+
+        .quote-card:hover {
+            transform: translateY(-6px);
+            background: linear-gradient(145deg, rgba(255,255,255,0.31), rgba(255,255,255,0.11));
+            border-color: rgba(255,255,255,0.9);
+            box-shadow: 0 16px 30px rgba(41,72,99,0.22);
+        }
+
+        body.dark-mode .quote-card:hover {
+            background: linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+            border-color: rgba(255,255,255,0.42);
+            box-shadow: 0 16px 34px rgba(0,0,0,0.30);
+        }
+
+        .quote-card:hover::before {
+            left: 110%;
+        }
+
+        /* =========================
+           左右翻页按钮
+        ========================== */
+
+        .page-controls {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .page-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border: 1px solid rgba(255,255,255,0.58);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            color: white;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 28px rgba(44,72,98,0.16);
+            transition: transform 0.25s ease, background 0.25s ease, opacity 0.25s ease;
+        }
+
+        #prevPageBtn {
+            left: clamp(14px, 3.4vw, 52px);
+        }
+
+        #nextPageBtn {
+            right: clamp(14px, 3.4vw, 52px);
+        }
+
+        .page-btn:hover:not(:disabled) {
+            transform: translateY(-50%) scale(1.07);
+            background: rgba(255,255,255,0.24);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.28;
+            cursor: default;
+        }
+
+        #pageInfo {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translateX(-50%);
+            min-width: 116px;
+            padding: 7px 13px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.075);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.92);
+            font-size: 12px;
+            letter-spacing: 0.10em;
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+        }
+
+        .quote-zone.open .page-controls {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .quote-zone.open .page-controls .page-btn {
+            pointer-events: none;
+        }
+
+        /* =========================
+           点击后出现的大卡片
+        ========================== */
+
+        .quote-popup {
+            position: absolute;
+            width: min(75%, 980px);
+            height: min(75%, 540px);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -46%) scale(0.88);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 30px;
+            background: var(--popup-bg);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 25px 60px rgba(36,65,90,0.30), inset 0 1px 0 rgba(255,255,255,0.30);
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(30px, 5vw, 70px);
+            text-align: center;
+
+            transition: opacity 0.4s ease, transform 0.45s cubic-bezier(.16,1,.3,1), visibility 0.4s;
+        }
+
+        body.dark-mode .quote-popup {
+            box-shadow: 0 28px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.10);
+        }
+
+        .quote-zone.open .quote-popup {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .quote-zone.open .cards {
+            opacity: 0.13;
+            filter: blur(4px);
+            transform: scale(0.985);
+            pointer-events: none;
+        }
+
+        .quote-mark {
+            position: absolute;
+            top: 15px;
+            left: 35px;
+            font-size: clamp(70px, 8vw, 130px);
+            line-height: 1;
+            color: rgba(255,255,255,0.20);
+            user-select: none;
+        }
+
+        #quoteText {
+            max-width: 900px;
+            color: white;
+            font-size: clamp(20px, 2.3vw, 35px);
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        #quoteAuthor {
+            margin-top: 28px;
+            color: rgba(255,255,255,0.82);
+            font-size: clamp(15px, 1.3vw, 19px);
+            letter-spacing: 2px;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 22px;
+            top: 18px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.13);
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            transition: background 0.25s ease, transform 0.25s ease;
+        }
+
+        .close-button:hover {
+            background: rgba(255,255,255,0.25);
+            transform: rotate(90deg);
+        }
+
+        /* =========================
+           平板 / 手机
+        ========================== */
+
+        @media (max-width: 1100px) {
+            .cards {
+                width: 84%;
+                max-height: 540px;
+            }
+
+            .quote-card {
+                max-width: 90px;
+            }
+
+            .utility-btn {
+                padding-inline: 13px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 16px;
+            }
+
+            .hero-screen {
+                padding: 18px;
+            }
+
+            .quote-app {
+                gap: 12px;
+            }
+
+            .quote-header-wrap {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 10px;
+            }
+
+            header {
+                padding: 16px 18px;
+                border-radius: 22px;
+            }
+
+            header h1 {
+                font-size: clamp(24px, 7vw, 34px);
+            }
+
+            .header-actions {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 25;
+            }
+
+            .header-actions .utility-btn {
+                width: 40px;
+                min-height: 40px;
+                padding: 0;
+                font-size: 0;
+            }
+
+            .header-actions .utility-btn::first-letter {
+                font-size: 14px;
+            }
+
+            .back-home-btn::before {
+                content: "←";
+                font-size: 17px;
+            }
+
+            .cards {
+                width: 72%;
+                height: calc(100% - 60px);
+                max-height: 520px;
+                gap: 6px;
+            }
+
+            .quote-card {
+                min-width: 0;
+                max-width: 70px;
+                border-radius: 14px;
+                font-size: clamp(11px, 3vw, 13px);
+            }
+
+            .page-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 19px;
+            }
+
+            #prevPageBtn {
+                left: 7px;
+            }
+
+            #nextPageBtn {
+                right: 7px;
+            }
+
+            #pageInfo {
+                bottom: 9px;
+                font-size: 10px;
+                min-width: 96px;
+                padding: 6px 10px;
+            }
+
+            .quote-popup {
+                width: 88%;
+                height: 76%;
+                padding: 30px 22px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+    </style>
+    <script src="site-nav.js" defer></script>
+</head>
+
+<body>
+<div class="page" id="page">
+
+    <section class="hero-screen" aria-label="Hero section">
+        <div class="hero-panel">
+            <span class="hero-kicker">Daily inspiration</span>
+            <h1>Words that move you.</h1>
+            <p>Explore thoughtful quotes from leaders, creators, and thinkers who shaped the way we see the world.</p>
+            <button class="hero-button" id="enterQuotesBtn" type="button">Start reading</button>
+        </div>
+    </section>
+
+    <section class="quote-app" aria-label="Quote list section">
+        <div class="quote-header-wrap">
+            <header>
+                <h1>Words Worth Remembering.</h1>
+            </header>
+
+            <div class="header-actions">
+                <button class="utility-btn back-home-btn" id="backHomeBtn" type="button">Back to home</button>
+            </div>
+        </div>
+
+        <section class="quote-zone" id="quoteZone">
+            <div class="cards" id="cards"></div>
+
+            <div class="page-controls" aria-label="Pagination controls">
+                <button class="page-btn" id="prevPageBtn" type="button" aria-label="Previous page">←</button>
+                <span id="pageInfo">Page 1 / 1</span>
+                <button class="page-btn" id="nextPageBtn" type="button" aria-label="Next page">→</button>
+            </div>
+
+            <div class="quote-popup" id="quotePopup">
+                <button class="close-button" id="closeButton" aria-label="Close" type="button">×</button>
+                <span class="quote-mark">“</span>
+                <p id="quoteText"></p>
+                <p id="quoteAuthor"></p>
+            </div>
+        </section>
+    </section>
+
+</div>
+
+<script>
+    const getPageSize = () => {
+        if (window.innerWidth <= 700) return 5;
+        if (window.innerWidth <= 1100) return 8;
+        return 13;
+    };
+
+const quotes = [
+        { author: "Bill Gates", quote: "Success is a lousy teacher. It seduces smart people into thinking they can't lose." },
+        { author: "Jeff Bezos", quote: "What's dangerous is not to evolve." },
+        { author: "Satya Nadella", quote: "Our industry does not respect tradition — it only respects innovation." },
+        { author: "Oprah Winfrey", quote: "Turn your wounds into wisdom." },
+        { author: "Kobe Bryant", quote: "Dedication makes dreams come true." },
+        { author: "Malala Yousafzai", quote: "One child, one teacher, one book, one pen can change the world." },
+        { author: "Simon Sinek", quote: "People don't buy what you do; they buy why you do it." },
+        { author: "Tim Cook", quote: "Let your joy be in your journey—not in some distant goal." },
+        { author: "Steve Jobs", quote: "The only way to do great work is to love what you do." },
+        { author: "Oscar Wilde", quote: "Be yourself; everyone else is already taken." },
+        { author: "Albert Einstein", quote: "Life is like riding a bicycle. To keep your balance, you must keep moving." },
+        { author: "Confucius", quote: "It does not matter how slowly you go as long as you do not stop." },
+        { author: "Mark Twain", quote: "The secret of getting ahead is getting started." },
+        { author: "Nelson Mandela", quote: "It always seems impossible until it's done." },
+        { author: "Ada Lovelace", quote: "That brain of mine is something more than merely mortal." },
+        { author: "Maya Angelou", quote: "You may not control all the events that happen to you, but you can decide not to be reduced by them." },
+        { author: "Steve Jobs", quote: "Innovation distinguishes between a leader and a follower." },
+        { author: "Winston Churchill", quote: "Success is the ability to apply physical and mental energies continuously and systematically toward the accomplishment of a worthwhile purpose." },
+        { author: "Thomas Edison", quote: "Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time." },
+        { author: "Marie Curie", quote: "Nothing in life is to be feared, it is only to be understood. Now is the time to understand more, so that we may fear less." },
+        { author: "Helen Keller", quote: "The hill we climb is not easy, but it is worth the effort." },
+        { author: "Leonardo da Vinci", quote: "Learning never exhausts the mind." },
+        { author: "Muhammad Ali", quote: "Don't count the days, make the days count." },
+        { author: "Elon Musk", quote: "When something is important enough, you do it even if the odds are not in your favor." },
+        { author: "Jane Goodall", quote: "What you do makes a difference, and you have to decide what kind of difference you want to make." },
+        { author: "Charles Darwin", quote: "It is not the strongest of the species that survive, nor the most intelligent, but the ones most responsive to change." },
+        { author: "Rumi", quote: "Raise your words, not your voice. It is rain that grows flowers, not thunder." },
+        { author: "Abraham Lincoln", quote: "The best way to predict the future is to create it." },
+        { author: "Virginia Woolf", quote: "Lock up your libraries if you like; but there is no gate, no lock, no bolt that you can set upon the freedom of my mind." },
+        { author: "Jim Rohn", quote: "Discipline is the bridge between goals and accomplishment." },
+        { author: "Ayn Rand", quote: "The question isn't who is going to let me; it's who is going to stop me." },
+        { author: "Frida Kahlo", quote: "At the end of the day, we can endure much more than we think we can." },
+        { author: "Xuefeng Zhang", quote: "You can't outrun me, believe it or not?" }
+    ];
+
+    const page = document.getElementById("page");
+    const enterQuotesBtn = document.getElementById("enterQuotesBtn");
+    const backHomeBtn = document.getElementById("backHomeBtn");
+    const quoteZone = document.getElementById("quoteZone");
+    const cardsContainer = document.getElementById("cards");
+    const quoteText = document.getElementById("quoteText");
+    const quoteAuthor = document.getElementById("quoteAuthor");
+    const closeButton = document.getElementById("closeButton");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+    let pageSize = getPageSize();
+    let currentPage = 0;
+
+    function renderCards() {
+        const start = currentPage * pageSize;
+        const end = start + pageSize;
+        const visibleQuotes = quotes.slice(start, end);
+        const totalPages = Math.ceil(quotes.length / pageSize);
+
+        cardsContainer.replaceChildren();
+
+        visibleQuotes.forEach(item => {
+            const card = document.createElement("button");
+            card.className = "quote-card";
+            card.type = "button";
+            card.setAttribute("aria-label", `Read quote by ${item.author}`);
+
+            const label = document.createElement("span");
+            label.className = "quote-card-label";
+            label.textContent = item.author;
+            card.appendChild(label);
+
+            card.addEventListener("click", () => {
+                quoteText.textContent = item.quote;
+                quoteAuthor.textContent = "— " + item.author;
+                quoteZone.classList.add("open");
+            });
+
+            cardsContainer.appendChild(card);
+        });
+
+        pageInfo.textContent = `Page ${currentPage + 1} / ${totalPages}`;
+        prevPageBtn.disabled = currentPage === 0;
+        nextPageBtn.disabled = currentPage >= totalPages - 1;
+    }
+
+    function goToPreviousPage() {
+        if (currentPage > 0) {
+            currentPage -= 1;
+            renderCards();
+        }
+    }
+
+    function goToNextPage() {
+        const totalPages = Math.ceil(quotes.length / pageSize);
+        if (currentPage < totalPages - 1) {
+            currentPage += 1;
+            renderCards();
+        }
+    }
+
+    function showQuotes() {
+        page.classList.add("show-quotes");
+    }
+
+    function hideQuotes() {
+        quoteZone.classList.remove("open");
+        page.classList.remove("show-quotes");
+    }
+
+    function closeQuote() {
+        quoteZone.classList.remove("open");
+    }
+
+    enterQuotesBtn.addEventListener("click", showQuotes);
+    backHomeBtn.addEventListener("click", hideQuotes);
+    closeButton.addEventListener("click", closeQuote);
+    prevPageBtn.addEventListener("click", goToPreviousPage);
+    nextPageBtn.addEventListener("click", goToNextPage);
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            if (quoteZone.classList.contains("open")) {
+                closeQuote();
+            } else if (page.classList.contains("show-quotes")) {
+                hideQuotes();
+            }
+        }
+
+        if (!quoteZone.classList.contains("open") && page.classList.contains("show-quotes")) {
+            if (event.key === "ArrowLeft") goToPreviousPage();
+            if (event.key === "ArrowRight") goToNextPage();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        const nextPageSize = getPageSize();
+        if (nextPageSize === pageSize) return;
+
+        const firstVisibleIndex = currentPage * pageSize;
+        pageSize = nextPageSize;
+        currentPage = Math.floor(firstVisibleIndex / pageSize);
+        renderCards();
+    });
+
+    renderCards();
+</script>
+</body>
+</html>

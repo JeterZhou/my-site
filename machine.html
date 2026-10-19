@@ -23,6 +23,15 @@
   .world > .main > .story { text-align: left; }
   .world > .main > .stage { padding-bottom: 18px; }
 }
+.world > .main.expanded-window {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.world > .main.expanded-window > .stage {
+  grid-column: 1 / -1;
+  padding-left: 8px;
+  padding-right: 8px;
+}
 @media (max-width: 820px) {
   .world > .main {
     min-height: 0;
@@ -48,7 +57,7 @@
   </button>
   <main class="main">
     <section class="story"><h1>press the window</h1></section>
-    <section class="stage" aria-label="Interactive four-pane window">
+    <section class="stage" aria-label="Interactive 2 by 2 window">
       <div class="window-assembly">
         <div class="window-head" aria-hidden="true"><div class="head-screws"><i class="screw"></i><i class="screw"></i><i class="screw"></i><i class="screw"></i></div></div>
         <div class="window-frame"><div class="window-grid" id="windowGrid">
@@ -95,10 +104,55 @@
 </div>
 <script>
 (()=>{'use strict';
-  const panes=[...document.querySelectorAll('.pane')];
-  const state=panes.map((el,index)=>({el,index,hits:0,broken:false,point:null,seed:137+index*119,repairing:false}));
+  const grid=document.getElementById('windowGrid');
+  const panes=[...grid.querySelectorAll('.pane')];
+  let state=[],gridSize=Math.round(Math.sqrt(panes.length));
   const ui={aircraft:document.getElementById('aircraft'),sling:document.getElementById('sling'),cargo:document.getElementById('cargo')};
-  let queue=[],busy=false,generation=0,muted=false,audioCtx=null,rotorAudio=null;
+  const assembly=grid.closest('.window-assembly'),stage=grid.closest('.stage'),main=document.querySelector('.main');
+  const initialPaneWidth=panes[0].offsetWidth,initialPaneHeight=panes[0].offsetHeight;
+  const initialGapX=parseFloat(getComputedStyle(grid).columnGap),initialGapY=parseFloat(getComputedStyle(grid).rowGap);
+  const frameWidth=assembly.offsetWidth-grid.offsetWidth;
+  let activeFlights=0,generation=0,muted=false,audioCtx=null,rotorAudio=null;
+  let baseAircraftAvailable=true,aircraftSerial=0;
+  function createState(el,index){return{el,index,hits:0,broken:false,point:null,seed:137+index*119,repairing:false}}
+  function createPane(index){
+    const el=document.createElement('div');
+    el.className='pane';el.dataset.pane=String(index);el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`Window pane ${index+1}`);
+    el.innerHTML='<div class="glass-film"></div><div class="glass-sheen"></div><svg class="cracks" aria-hidden="true"></svg><div class="shard-layer" aria-hidden="true"></div><div class="install-glow" aria-hidden="true"></div>';
+    return el;
+  }
+  function createAircraftRig(){
+    if(baseAircraftAvailable){baseAircraftAvailable=false;return{aircraft:ui.aircraft,sling:ui.sling,cargo:ui.cargo,isBase:true}}
+    const aircraft=ui.aircraft.cloneNode(true),serial=++aircraftSerial;
+    const elements=[aircraft,...aircraft.querySelectorAll('[id]')],ids=new Map();
+    elements.forEach(el=>{const id=el.id;if(id){const next=`${id}-${serial}`;ids.set(id,next);el.id=next}});
+    [aircraft,...aircraft.querySelectorAll('*')].forEach(el=>el.getAttributeNames().forEach(name=>{
+      const value=el.getAttribute(name);if(!value||!value.includes('#'))return;
+      let updated=value;ids.forEach((next,id)=>{updated=updated.replaceAll(`#${id}`,`#${next}`)});
+      if(updated!==value)el.setAttribute(name,updated);
+    }));
+    document.body.append(aircraft);
+    aircraft.style.display='none';
+    return{aircraft,sling:aircraft.querySelector('.sling'),cargo:aircraft.querySelector('.cargo'),isBase:false};
+  }
+  function connectPane(s){
+    s.el.addEventListener('pointerdown',e=>{if(e.button!==0)return;hit(s,e)});
+    s.el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hit(s,null)}});
+    syncPane(s);
+  }
+  state=panes.map((el,index)=>createState(el,index));
+  state.forEach(connectPane);
+  function fitExpandedWindow(){
+    if(gridSize===2)return;
+    const stageStyle=getComputedStyle(stage);
+    const availableWidth=stage.clientWidth-parseFloat(stageStyle.paddingLeft)-parseFloat(stageStyle.paddingRight);
+    const desiredGridWidth=gridSize*initialPaneWidth+(gridSize-1)*initialGapX;
+    const desiredGridHeight=gridSize*initialPaneHeight+(gridSize-1)*initialGapY;
+    const width=Math.min(desiredGridWidth+frameWidth,availableWidth);
+    assembly.style.maxWidth='none';
+    assembly.style.width=`${Math.max(0,width)}px`;
+    grid.style.aspectRatio=`${desiredGridWidth} / ${desiredGridHeight}`;
+  }
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ms=n=>reduced?Math.max(120,n*.47):n;
   const wait=n=>new Promise(r=>setTimeout(r,ms(n)));
@@ -152,13 +206,30 @@
     playGlass(s.hits);
     if(s.hits<3){drawCracks(s);syncPane(s);return}
     s.broken=true;
+    s.repairing=true;
     syncPane(s);
     s.el.querySelector('.cracks').innerHTML='';
     spawnShards(s);
-    queue.push(s.index);
-    if(!busy)void processQueue(generation);
+    void repairPane(s);
+    if(state.every(pane=>pane.broken))advanceGrid();
   }
-  panes.forEach((el,i)=>{el.addEventListener('pointerdown',e=>{if(e.button!==0)return;hit(state[i],e)});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hit(state[i],null)}})});
+  function advanceGrid(){
+    if(gridSize>=5)return;
+    generation++;
+    gridSize++;
+    state.forEach(s=>s.el.remove());
+    state=Array.from({length:gridSize*gridSize},(_,index)=>createState(createPane(index),index));
+    state.forEach(s=>grid.append(s.el));
+    state.forEach(connectPane);
+    grid.style.gridTemplateColumns=`repeat(${gridSize},minmax(0,1fr))`;
+    grid.style.gridTemplateRows=`repeat(${gridSize},minmax(0,1fr))`;
+    grid.style.columnGap=`${initialGapX}px`;
+    grid.style.rowGap=`${initialGapY}px`;
+    grid.classList.toggle('large-grid',gridSize>2);
+    stage.setAttribute('aria-label',`Interactive ${gridSize} by ${gridSize} window`);
+    main.classList.add('expanded-window');
+    requestAnimationFrame(fitExpandedWindow);
+  }
   // All sound is optional and synthesized locally with Web Audio.
   function context(){if(muted)return null;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}catch{return null}}
   function tone(freq,dur,kind='triangle',vol=.035,delay=0){const ctx=context();if(!ctx)return;const osc=ctx.createOscillator(),gain=ctx.createGain(),now=ctx.currentTime+delay;osc.type=kind;osc.frequency.setValueAtTime(freq,now);osc.frequency.exponentialRampToValueAtTime(Math.max(55,freq*.62),now+dur);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(vol,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+dur);osc.connect(gain).connect(ctx.destination);osc.start(now);osc.stop(now+dur+.02)}
@@ -166,27 +237,98 @@
   function playGlass(stage){if(muted)return;tone(stage===3?210:stage===2?490:730,.16,'triangle',stage===3?.07:.035);noiseBurst(stage===3?.6:stage===2?.23:.08,stage===3?.11:.045);if(stage===3)for(let i=0;i<7;i++)tone(500+i*170,.23,'sine',.012,i*.045)}
   function startRotor(){const ctx=context();if(!ctx||rotorAudio)return;const osc=ctx.createOscillator(),gain=ctx.createGain(),lfo=ctx.createOscillator(),lfoGain=ctx.createGain();osc.type='sawtooth';osc.frequency.value=59;lfo.type='sine';lfo.frequency.value=17;lfoGain.gain.value=.016;lfo.connect(lfoGain).connect(gain.gain);gain.gain.value=.025;osc.connect(gain).connect(ctx.destination);osc.start();lfo.start();rotorAudio={osc,gain,lfo,lfoGain};}
   function stopRotor(){if(!rotorAudio)return;try{rotorAudio.osc.stop();rotorAudio.lfo.stop()}catch{}rotorAudio=null}
-  document.getElementById('soundToggle').addEventListener('click',()=>{muted=!muted;const button=document.getElementById('soundToggle');button.setAttribute('aria-pressed',String(!muted));button.setAttribute('aria-label',muted?'Sound off':'Sound on');button.classList.toggle('is-muted',muted);document.getElementById('soundLabel').textContent=muted?'Sound off':'Sound on';if(muted)stopRotor();else{context();if(busy)startRotor();tone(690,.1,'sine',.025)}});
-  function flightPose(x,y,scale,opacity=1,tilt=0,rope=24){const a=ui.aircraft;a.style.left=x+'px';a.style.top=y+'px';a.style.opacity=String(opacity);a.style.transform=`translateX(-50%) scale(${scale}) rotate(${tilt}deg)`;ui.sling.style.setProperty('--rope',Math.max(0,rope)+'px')}
-  function tween(duration,fn,token){return new Promise(resolve=>{const start=performance.now(),dur=ms(duration);function frame(now){if(token!==generation){resolve(false);return}const t=clamp((now-start)/dur,0,1);fn(t);if(t<1)requestAnimationFrame(frame);else resolve(true)}requestAnimationFrame(frame)})}
+  document.getElementById('soundToggle').addEventListener('click',()=>{muted=!muted;const button=document.getElementById('soundToggle');button.setAttribute('aria-pressed',String(!muted));button.setAttribute('aria-label',muted?'Sound off':'Sound on');button.classList.toggle('is-muted',muted);document.getElementById('soundLabel').textContent=muted?'Sound off':'Sound on';if(muted)stopRotor();else{context();if(activeFlights)startRotor();tone(690,.1,'sine',.025)}});
+  function flightPose(rig,x,y,scale,opacity=1,tilt=0,rope=24){const a=rig.aircraft;rig.pose={x,y,scale,opacity,tilt};a.style.left=x+'px';a.style.top=y+'px';a.style.opacity=String(opacity);a.style.transform=`translateX(-50%) scale(${scale}) rotate(${tilt}deg)`;rig.sling.style.setProperty('--rope',Math.max(0,rope)+'px')}
+  function tween(duration,fn,token){return new Promise(resolve=>{const start=performance.now(),dur=ms(duration);function frame(now){if(token!==null&&token!==generation){resolve(false);return}const t=clamp((now-start)/dur,0,1);fn(t);if(t<1)requestAnimationFrame(frame);else resolve(true)}requestAnimationFrame(frame)})}
   function flyTarget(s){const rect=s.el.getBoundingClientRect();const x=rect.left+rect.width/2;const y=Math.max(28,rect.top-202);return{rect,x,y,rope:Math.max(10,rect.top+3-(y+82))}}
-  async function processQueue(token){if(busy)return;busy=true;
-    while(queue.length&&token===generation){const idx=queue.shift(),s=state[idx];if(!s.broken)continue;s.repairing=true;syncPane(s);await wait(900);if(token!==generation)break;
-      const target=flyTarget(s);const viewportW=innerWidth;const fromRight=s.index%2===0;const startX=fromRight?viewportW+100:-100;const startY=Math.max(-15,target.y-95);const payloadWidth=Math.max(40,target.rect.width-6),payloadHeight=Math.max(40,target.rect.height-6);ui.cargo.style.width=payloadWidth+'px';ui.cargo.style.height=payloadHeight+'px';ui.cargo.classList.remove('hide');ui.aircraft.style.display='block';
-      startRotor();
-      let ok=await tween(2750,t=>{const e=ease(t);flightPose(startX+(target.x-startX)*e,startY+(target.y-startY)*out(t),.22+.78*e,.12+.88*clamp(t*3,0,1),Math.sin(t*8)*1.8,20)},token);if(!ok)break;
-      ok=await tween(1800,t=>{flightPose(target.x,target.y+Math.sin(t*12)*1.8,1,1,Math.sin(t*10)*.5,20+(target.rope-20)*ease(t))},token);if(!ok)break;
-      await wait(320);if(token!==generation)break;
-      ui.cargo.classList.add('hide');s.broken=false;s.hits=0;s.point=null;s.repairing=false;syncPane(s);s.el.querySelector('.shard-layer').replaceChildren();s.el.querySelector('.cracks').innerHTML='';const glow=s.el.querySelector('.install-glow');glow.classList.remove('animate');void glow.offsetWidth;glow.classList.add('animate');if(!muted){tone(840,.22,'sine',.05);tone(1200,.3,'sine',.025,.07)}
-      await wait(720);if(token!==generation)break;
-      const exitX=fromRight?-145:innerWidth+145;const exitY=Math.max(-70,target.y-155);ok=await tween(1950,t=>{const e=ease(t);flightPose(target.x+(exitX-target.x)*e,target.y+(exitY-target.y)*e,1-.8*e,1-e*.85,-e*3,15)},token);if(!ok)break;
-      ui.aircraft.style.opacity='0';await wait(330);
+  function isBottomRow(s){return Math.floor(s.index/gridSize)===gridSize-1}
+  function chooseRepairMethod(s){
+    const roll=Math.random();
+    // Helicopter stays the main repair method. Other methods are occasional events.
+    if(isBottomRow(s)){
+      if(roll<.75)return 'helicopter';
+      if(roll<.87)return 'drone';
+      if(roll<.95)return 'crane';
+      return 'worker';
     }
-    stopRotor();ui.aircraft.style.display='none';busy=false;if(token===generation&&queue.length)void processQueue(token)
+    if(roll<.80)return 'helicopter';
+    if(roll<.92)return 'drone';
+    return 'crane';
+  }
+  function finishPaneRepair(s){
+    s.broken=false;s.hits=0;s.point=null;s.repairing=false;syncPane(s);
+    s.el.querySelector('.shard-layer').replaceChildren();s.el.querySelector('.cracks').innerHTML='';
+    const glow=s.el.querySelector('.install-glow');glow.classList.remove('animate');void glow.offsetWidth;glow.classList.add('animate');
+    if(!muted){tone(840,.22,'sine',.05);tone(1200,.3,'sine',.025,.07)}
+  }
+  function repairPane(s){
+    const method=chooseRepairMethod(s);
+    if(method==='helicopter')return repairPaneByHelicopter(s);
+    return repairPaneByAlternative(s,method);
+  }
+  function createRepairActor(method){
+    const actor=document.createElement('div');actor.className=`repair-actor repair-${method}`;actor.setAttribute('aria-hidden','true');
+    const art={
+      drone:`<svg viewBox="0 0 112 62" xmlns="http://www.w3.org/2000/svg"><g class="propeller"><ellipse cx="22" cy="15" rx="18" ry="3" fill="#405c68"/><circle cx="22" cy="15" r="4" fill="#e8f7fa" stroke="#496c7a" stroke-width="2"/></g><g class="propeller"><ellipse cx="90" cy="15" rx="18" ry="3" fill="#405c68"/><circle cx="90" cy="15" r="4" fill="#e8f7fa" stroke="#496c7a" stroke-width="2"/></g><path d="M24 19L42 29M88 19L70 29" stroke="#496c7a" stroke-width="5" stroke-linecap="round"/><path d="M39 25Q56 18 73 25L80 39Q56 48 32 39Z" fill="#f1b83f" stroke="#6b6b56" stroke-width="2"/><rect x="45" y="28" width="22" height="11" rx="4" fill="#bceafa" stroke="#3b7184" stroke-width="2"/><circle cx="56" cy="35" r="3" fill="#3b7184"/><path d="M56 43V53" stroke="#596e7a" stroke-width="2"/><rect x="42" y="51" width="28" height="7" rx="1.5" fill="#d9f7ff" stroke="#5c98aa" stroke-width="1.5"/><path d="M46 53H66" stroke="#fff" stroke-width="1.5"/></svg>`,
+      crane:`<svg viewBox="0 0 260 300" xmlns="http://www.w3.org/2000/svg"><ellipse cx="91" cy="287" rx="75" ry="8" fill="#234e5a" opacity=".17"/><path d="M48 267L185 29" stroke="#7a5929" stroke-width="19" stroke-linecap="round"/><path d="M48 267L185 29" stroke="#f4bd3f" stroke-width="13" stroke-linecap="round"/><path d="M62 244L165 65M77 216L150 91M92 188L136 117" stroke="#fff0a5" stroke-width="2.5" opacity=".9"/><path d="M185 29L194 83" stroke="#344f5a" stroke-width="3"/><path d="M194 83v11q0 11 9 7q5-3 1-8" fill="none" stroke="#344f5a" stroke-width="4" stroke-linecap="round"/><rect class="crane-glass" x="169" y="94" width="50" height="59" rx="2" fill="#d7f7ffb8" stroke="#f8ffff" stroke-width="4"/><rect x="176" y="101" width="36" height="45" fill="none" stroke="#78aab9" stroke-width="1.5"/><path d="M179 104L207 143M207 104L179 143" stroke="#fff" stroke-width="1.5" opacity=".75"/><path d="M20 254H106L130 272H18Z" fill="#e8ad35" stroke="#785c31" stroke-width="3"/><rect x="37" y="232" width="55" height="29" rx="4" fill="#ffd45a" stroke="#785c31" stroke-width="3"/><rect x="47" y="237" width="26" height="12" rx="2" fill="#9dd5e6" stroke="#537b88" stroke-width="2"/><rect x="10" y="267" width="124" height="14" rx="5" fill="#4b6069"/><circle cx="35" cy="281" r="12" fill="#334d58" stroke="#b7c5c4" stroke-width="3"/><circle cx="105" cy="281" r="12" fill="#334d58" stroke="#b7c5c4" stroke-width="3"/><circle cx="35" cy="281" r="4" fill="#d5e1df"/><circle cx="105" cy="281" r="4" fill="#d5e1df"/></svg>`,
+      worker:`<svg viewBox="0 0 150 230" xmlns="http://www.w3.org/2000/svg"><path d="M94 15L58 222M108 19L72 222" stroke="#bd8d48" stroke-width="5" stroke-linecap="round"/><path d="M91 36L105 39M87 59L101 62M83 82L97 85M79 105L93 108M75 128L89 131M71 151L85 154M67 174L81 177M63 197L77 200" stroke="#e7c47d" stroke-width="3"/><g class="worker-climber"><path d="M55 77L76 100L90 123M75 99L52 115M59 83L42 105M75 100L82 127" fill="none" stroke="#344f60" stroke-width="8" stroke-linecap="round"/><path d="M56 73L74 93L87 115" fill="none" stroke="#e6a83c" stroke-width="5" stroke-linecap="round"/><circle cx="52" cy="59" r="13" fill="#f0bd91" stroke="#805b43" stroke-width="2"/><path d="M38 57Q39 39 53 41Q68 42 67 57Z" fill="#f3c83f" stroke="#805b43" stroke-width="2"/><path d="M43 48H64" stroke="#fff0a3" stroke-width="3"/><path d="M69 94L87 105" stroke="#e6a83c" stroke-width="6" stroke-linecap="round"/><path d="M51 114L40 135M81 124L91 141" stroke="#344f60" stroke-width="7" stroke-linecap="round"/><path d="M40 135L33 142M91 141L98 145" stroke="#303e49" stroke-width="5" stroke-linecap="round"/></g><rect x="86" y="5" width="21" height="8" rx="2" fill="#d6f6ff" stroke="#f8ffff" stroke-width="2"/></svg>`
+    };
+    actor.innerHTML=art[method];document.body.append(actor);return actor;
+  }
+  function actorPose(actor,x,y,scale=1,opacity=1,rotation=0){actor.style.left=x+'px';actor.style.top=y+'px';actor.style.transform=`scale(${scale}) rotate(${rotation}deg)`;actor.style.opacity=String(opacity)}
+  async function repairPaneByAlternative(s,method){
+    const token=generation,rect=s.el.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+    const actor=createRepairActor(method),fromRight=s.index%2===0;
+    let finalLeft,finalTop,scale=1,startLeft,startTop,ok=true;
+    try{
+      if(method==='drone'){
+        finalLeft=cx-56;finalTop=cy-31;startLeft=fromRight?innerWidth+30:-135;startTop=Math.max(28,cy-78);
+        actorPose(actor,startLeft,startTop,.9,.05,fromRight?-12:12);await wait(260);if(token!==generation)return;
+        ok=await tween(1350,t=>{const e=ease(t);actorPose(actor,startLeft+(finalLeft-startLeft)*e,startTop+(finalTop-startTop)*e,.9+.1*e,.12+.88*e,(fromRight?-1:1)*(1-e)*12)},token);if(!ok)return;
+        ok=await tween(650,t=>actorPose(actor,finalLeft,finalTop+Math.sin(t*8)*2,1,1,Math.sin(t*8)*1.5),token);if(!ok)return;
+        await wait(380);if(token!==generation)return;finishPaneRepair(s);await wait(400);if(token!==generation)return;
+        const exitX=fromRight?-145:innerWidth+145;await tween(850,t=>{const e=ease(t);actorPose(actor,finalLeft+(exitX-finalLeft)*e,finalTop-40*e,1-.15*e,1-e,0)},token);
+      }else if(method==='crane'){
+        scale=clamp((innerHeight-cy-12)/190,.48,.92);finalLeft=cx-190*scale;finalTop=cy-110*scale;
+        startLeft=fromRight?innerWidth+40:-285;startTop=finalTop+55*scale;
+        actorPose(actor,startLeft,startTop,scale,.05,fromRight?-7:7);await wait(320);if(token!==generation)return;
+        ok=await tween(1450,t=>{const e=ease(t);actorPose(actor,startLeft+(finalLeft-startLeft)*e,startTop+(finalTop-startTop)*e,scale,.15+.85*e,(fromRight?-1:1)*(1-e)*7)},token);if(!ok)return;
+        await wait(620);if(token!==generation)return;finishPaneRepair(s);await wait(460);if(token!==generation)return;
+        const exitX=fromRight?-290:innerWidth+290;await tween(950,t=>{const e=ease(t);actorPose(actor,finalLeft+(exitX-finalLeft)*e,finalTop+30*e,scale,1-e,0)},token);
+      }else{
+        // Worker + ladder is deliberately eligible only on the current bottom row.
+        if(!isBottomRow(s))return;
+        scale=clamp((innerHeight-cy-12)/205,.48,.9);finalLeft=cx-96*scale;finalTop=cy-15*scale;
+        startLeft=finalLeft+14*scale;startTop=finalTop+88*scale;
+        actorPose(actor,startLeft,startTop,scale,.05,3);await wait(300);if(token!==generation)return;
+        ok=await tween(1050,t=>{const e=ease(t);actorPose(actor,startLeft+(finalLeft-startLeft)*e,startTop+(finalTop-startTop)*e,scale,.15+.85*e,3*(1-e))},token);if(!ok)return;
+        await wait(900);if(token!==generation)return;finishPaneRepair(s);await wait(500);if(token!==generation)return;
+        await tween(900,t=>{const e=ease(t);actorPose(actor,finalLeft,finalTop+95*scale*e,scale,1-e,0)},token);
+      }
+    }finally{actor.remove()}
+  }
+  async function repairPaneByHelicopter(s){const token=generation,rig=createAircraftRig(),target=flyTarget(s);rig.pose=null;activeFlights++;
+    try{
+      await wait(900);if(token!==generation)return;
+      const viewportW=innerWidth,fromRight=s.index%2===0,startX=fromRight?viewportW+100:-100,startY=Math.max(-15,target.y-95),payloadWidth=Math.max(40,target.rect.width-6),payloadHeight=Math.max(40,target.rect.height-6);
+      rig.cargo.style.width=payloadWidth+'px';rig.cargo.style.height=payloadHeight+'px';rig.cargo.classList.remove('hide');rig.aircraft.style.display='block';startRotor();
+      let ok=await tween(2750,t=>{const e=ease(t);flightPose(rig,startX+(target.x-startX)*e,startY+(target.y-startY)*out(t),.22+.78*e,.12+.88*clamp(t*3,0,1),Math.sin(t*8)*1.8,20)},token);if(!ok)return;
+      ok=await tween(1800,t=>{flightPose(rig,target.x,target.y+Math.sin(t*12)*1.8,1,1,Math.sin(t*10)*.5,20+(target.rope-20)*ease(t))},token);if(!ok)return;
+      await wait(320);if(token!==generation)return;
+      rig.cargo.classList.add('hide');finishPaneRepair(s);
+      await wait(720);if(token!==generation)return;
+      const exitX=fromRight?-145:innerWidth+145,exitY=Math.max(-70,target.y-155);ok=await tween(1950,t=>{const e=ease(t);flightPose(rig,target.x+(exitX-target.x)*e,target.y+(exitY-target.y)*e,1-.8*e,1-e*.85,-e*3,15)},token);if(!ok)return;
+      rig.aircraft.style.opacity='0';await wait(330);
+    }finally{
+      if(token!==generation&&rig.pose){
+        const {x,y,scale,opacity,tilt}=rig.pose,exitX=s.index%2===0?-145:innerWidth+145,exitY=Math.max(-70,y-120);
+        await tween(720,t=>{const e=ease(t);flightPose(rig,x+(exitX-x)*e,y+(exitY-y)*e,scale*(1-.45*e),opacity*(1-e),tilt-e*4,12)},null);
+      }
+      rig.aircraft.style.display='none';if(rig.isBase)baseAircraftAvailable=true;else rig.aircraft.remove();activeFlights--;if(activeFlights===0)stopRotor();
+    }
   }
   // Keep crack coordinates correct after responsive layout changes.
-  let resizeId=0;window.addEventListener('resize',()=>{clearTimeout(resizeId);resizeId=setTimeout(()=>state.forEach(s=>{if(s.hits>0&&!s.broken&&s.point)drawCracks(s)}),110)},{passive:true});
-  state.forEach(syncPane);
+  let resizeId=0;window.addEventListener('resize',()=>{clearTimeout(resizeId);resizeId=setTimeout(()=>{fitExpandedWindow();state.forEach(s=>{if(s.hits>0&&!s.broken&&s.point)drawCracks(s)})},110)},{passive:true});
 })();
 </script>
 </body>

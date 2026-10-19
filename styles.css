@@ -322,6 +322,8 @@ h1{font-size:clamp(53px,5.8vw,89px);line-height:.99;letter-spacing:-.067em;margi
 .window-head{height:31px;background:linear-gradient(180deg,#fffefa,#e7e2d7 70%,#d0cfc4);border:2px solid #fdfdf9;border-bottom:0;border-radius:10px 10px 0 0;box-shadow:inset 0 3px 1px #fff,0 2px 2px #80949d77;display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:#7c918f;font-size:9px;font-weight:900;letter-spacing:.19em;text-shadow:0 1px 1px white}.head-screws{display:flex;gap:36px}.screw{height:6px;width:6px;border-radius:100%;background:linear-gradient(135deg,#a4aaa4,#edf3e9);box-shadow:0 1px 1px white}
 .window-frame{position:relative;padding:17px 17px 15px;background:linear-gradient(115deg,#fffef9 0%,#eeeadd 30%,#fffdf6 58%,#dbded2 100%);border:2px solid #f8fff4;box-shadow:inset 4px 4px 1px #fff,inset -5px -4px 2px #b2b8ac,0 3px 0 #a5b5aa,0 15px 0 #d1d6c9,3px 22px 0 #9baa9c;border-radius:2px 2px 5px 5px}
 .window-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;aspect-ratio:1.37;gap:15px;background:#d3ddd5;box-shadow:inset 0 3px 5px #798f90,inset 0 0 0 2px #c2d1c5}
+.window-grid.large-grid{background:#fffdf5}
+.window-grid.large-grid:after{display:none}
 .window-view{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}.window-grid:after{content:"";position:absolute;inset:0;z-index:13;pointer-events:none;background:linear-gradient(90deg,transparent calc(50% - 7.5px),#fdfdf5 calc(50% - 7.5px),#d3dfd7 50%,#f7f9ef calc(50% + 7.5px),transparent calc(50% + 7.5px)),linear-gradient(0deg,transparent calc(50% - 7.5px),#fffdf3 calc(50% - 7.5px),#c6d7ce 50%,#fcfdf5 calc(50% + 7.5px),transparent calc(50% + 7.5px));filter:drop-shadow(1px 1px 1px #4c737a55)}.pane{position:relative;overflow:hidden;cursor:crosshair;background:linear-gradient(145deg,#d0ecf719,#faffff16 55%,#9bcdea12);box-shadow:inset 3px 3px 8px #194f6487,inset -2px -2px 5px #ffffffe0,0 0 0 1px #719eb091;touch-action:manipulation;outline-offset:-4px;isolation:isolate;user-select:none;-webkit-user-select:none}
 .pane:after{content:"";pointer-events:none;position:absolute;inset:0;z-index:1;background:linear-gradient(125deg,#fff9 0%,#fff4 7%,transparent 22%,transparent 58%,#fff4 62%,transparent 73%,#fff2 100%);opacity:.63;transition:opacity .35s}
 .pane:hover .glass-film{background-color:#d8f4ff5c}.pane.is-broken{cursor:wait;background:transparent;box-shadow:inset 1px 2px 13px #164656aa,inset -2px -2px 3px #fffffff5}.pane.is-broken:after{opacity:0}.pane.is-broken .glass-film{opacity:0}.pane.is-broken .glass-sheen{opacity:0}
@@ -435,3 +437,18 @@ body.site-nav-enabled {
 body.site-nav-enabled .main {
   padding-top: clamp(18px,3vh,32px);
 }
+
+
+/* Probability-triggered repair crews for Press the Window. */
+.repair-actor{position:fixed;left:0;top:0;z-index:31;pointer-events:none;opacity:0;transform-origin:top left;will-change:left,top,transform,opacity;filter:drop-shadow(1px 6px 5px #174b5b45)}
+.repair-actor svg{display:block;width:100%;height:100%;overflow:visible}
+.repair-drone{width:112px;height:62px}
+.repair-drone .propeller{transform-box:fill-box;transform-origin:center;animation:repairPropeller .12s linear infinite}
+.repair-crane{width:260px;height:300px}
+.repair-crane .crane-glass{animation:repairGlassPulse .75s ease-in-out infinite alternate}
+.repair-worker{width:150px;height:230px}
+.repair-worker .worker-climber{transform-box:fill-box;transform-origin:center;animation:repairClimb .65s ease-in-out infinite alternate}
+@keyframes repairPropeller{to{transform:rotate(360deg)}}
+@keyframes repairGlassPulse{from{opacity:.65}to{opacity:1}}
+@keyframes repairClimb{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){.repair-drone .propeller,.repair-crane .crane-glass,.repair-worker .worker-climber{animation-duration:1.5s}}

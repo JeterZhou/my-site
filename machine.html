@@ -9,8 +9,13 @@
 <link rel="icon"  href="favicon_32x32.jpg" type="image/x-icon">
 <style>
 /* Tighter layout below the site navigation; keep the window centered. */
+.window-grid .pane,
+.window-grid .pane.is-broken {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M8 26L21 12' stroke='%23573d22' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M16 5l11 6-4 7-11-6z' fill='%23f3bd55' stroke='%23553e27' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") 25 8, pointer;
+}
 @media (min-width: 821px) {
   .world > .main {
+    grid-template-columns: minmax(0, 1fr);
     width: 100%;
     max-width: none;
     min-height: 0;
@@ -56,7 +61,6 @@
     <span id="soundLabel">Sound on</span>
   </button>
   <main class="main">
-    <section class="story"><h1>press the window</h1></section>
     <section class="stage" aria-label="Interactive 2 by 2 window">
       <div class="window-assembly">
         <div class="window-head" aria-hidden="true"><div class="head-screws"><i class="screw"></i><i class="screw"></i><i class="screw"></i><i class="screw"></i></div></div>

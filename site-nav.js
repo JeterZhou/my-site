@@ -354,6 +354,120 @@
             }
         }
     `;
+    // Keep the full desktop navigation; use a compact dropdown on small screens.
+    // This also works on existing Quotes, Projects, and Useless Machine pages.
+    style.textContent += `
+        .site-switcher__brand,
+        .site-switcher__menu-button { display: none; }
+
+        @media (max-width: 760px) {
+            .site-switcher {
+                top: 10px;
+                width: calc(100vw - 20px);
+                min-height: 58px;
+                justify-content: space-between;
+                gap: 7px;
+                padding: 7px 9px;
+            }
+            .site-switcher__brand {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                padding: 0 11px;
+                min-height: 40px;
+                color: #fff;
+                font: 800 19px/1 Manrope, Inter, system-ui, sans-serif;
+                letter-spacing: -.06em;
+                text-decoration: none;
+            }
+            .site-switcher.site-nav-light .site-switcher__brand { color: #18243a; }
+            .site-switcher__links {
+                position: absolute;
+                top: calc(100% + 10px);
+                left: 0;
+                right: 0;
+                z-index: 1;
+                display: none;
+                flex: none;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 4px;
+                padding: 10px;
+                border: 1px solid rgba(255,255,255,.2);
+                border-radius: 19px;
+                background: rgba(21,32,49,.97);
+                box-shadow: 0 18px 40px rgba(0,0,0,.18);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+            }
+            .site-switcher.site-nav-light .site-switcher__links {
+                background: rgba(255,255,255,.97);
+                border-color: rgba(148,163,184,.23);
+            }
+            .site-switcher.is-menu-open .site-switcher__links { display: flex; }
+            .site-switcher .site-nav-link {
+                min-height: 42px;
+                width: 100%;
+                justify-content: flex-start;
+                padding: 0 15px;
+                font-size: 13px !important;
+            }
+            .site-switcher .site-theme-button {
+                min-width: 40px;
+                width: 40px;
+                min-height: 40px;
+                padding: 0;
+                flex: 0 0 auto;
+            }
+            .site-switcher .site-theme-button__label { display: none; }
+            .site-switcher .site-contact-button {
+                min-height: 40px;
+                padding: 0 14px;
+                font-size: 12px !important;
+                margin-left: auto;
+            }
+            .site-switcher__menu-button {
+                appearance: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                min-width: 40px;
+                width: 40px;
+                height: 40px;
+                padding: 0;
+                border: 1px solid rgba(255,255,255,.28);
+                border-radius: 50%;
+                color: #fff;
+                background: rgba(255,255,255,.08);
+                cursor: pointer;
+            }
+            .site-switcher.site-nav-light .site-switcher__menu-button {
+                color: #17243a;
+                background: #fff;
+                border-color: rgba(148,163,184,.4);
+            }
+            .site-switcher__menu-button:hover { background: rgba(255,255,255,.18); }
+            .site-switcher__menu-button:focus-visible {
+                outline: 2px solid #abc1ff;
+                outline-offset: 2px;
+            }
+            .site-switcher__menu-icon { display: flex; flex-direction: column; gap: 5px; }
+            .site-switcher__menu-icon i {
+                display: block; width: 17px; height: 2px;
+                border-radius: 2px; background: currentColor;
+                transition: transform .2s ease;
+            }
+            .site-switcher.is-menu-open .site-switcher__menu-icon i:first-child { transform: translateY(3.5px) rotate(45deg); }
+            .site-switcher.is-menu-open .site-switcher__menu-icon i:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+        }
+        @media (max-width: 360px) {
+            .site-switcher { gap: 3px; padding: 6px; }
+            .site-switcher__brand { padding: 0 8px; }
+            .site-switcher .site-contact-button { padding: 0 10px; }
+        }
+    `;
     document.head.appendChild(style);
 
     let siteNavThemeObserver = null;
@@ -417,8 +531,15 @@
         nav.className = "site-switcher";
         nav.setAttribute("aria-label", "Main page switcher");
 
+        const brand = document.createElement("a");
+        brand.className = "site-switcher__brand";
+        brand.href = "index.html";
+        brand.textContent = "JZ.";
+        brand.setAttribute("aria-label", "Jeter Zhou — Home");
+
         const links = document.createElement("div");
         links.className = "site-switcher__links";
+        links.id = "siteNavigationLinks";
 
         pages.forEach((page) => {
             const link = document.createElement("a");
@@ -447,7 +568,15 @@
         contactButton.setAttribute("aria-expanded", "false");
         contactButton.setAttribute("aria-controls", "siteContactPanel");
 
-        nav.append(links, themeButton, contactButton);
+        const menuButton = document.createElement("button");
+        menuButton.type = "button";
+        menuButton.className = "site-switcher__menu-button";
+        menuButton.setAttribute("aria-label", "Open navigation menu");
+        menuButton.setAttribute("aria-controls", "siteNavigationLinks");
+        menuButton.setAttribute("aria-expanded", "false");
+        menuButton.innerHTML = '<span class="site-switcher__menu-icon" aria-hidden="true"><i></i><i></i></span>';
+
+        nav.append(brand, links, themeButton, contactButton, menuButton);
 
         themeButton.addEventListener("click", () => {
             const nextDark = !document.body.classList.contains("dark-mode");
@@ -487,7 +616,7 @@
 
         const note = document.createElement("p");
         note.className = "site-contact-note";
-        note.textContent = "Edit the CONTACT object at the top of site-nav.js to replace the placeholder details.";
+        note.textContent = "Open to ideas, feedback, and a friendly hello.";
 
         list.append(emailItem, githubItem);
         panel.append(title, intro, list, note);
@@ -507,26 +636,62 @@
 
         applyNavigationTheme();
 
+        // Over the hero the navigation stays dark/glassy even in light mode.
+        // Once the user reaches the white project section it returns to the
+        // normal shared light/dark navigation theme.
+        function syncHeroNavigation() {
+            if (!document.body.classList.contains("home-page")) return;
+            const hero = document.querySelector(".home-hero");
+            const overHero = Boolean(hero && hero.getBoundingClientRect().bottom > 108);
+            nav.classList.toggle("site-nav-over-hero", overHero);
+        }
+        syncHeroNavigation();
+        window.addEventListener("scroll", syncHeroNavigation, { passive: true });
+        window.addEventListener("resize", () => {
+            syncHeroNavigation();
+            if (window.innerWidth > 760) setMobileMenu(false);
+        });
+
         function setPanel(open) {
             panel.hidden = !open;
             contactButton.classList.toggle("is-open", open);
             contactButton.setAttribute("aria-expanded", String(open));
+            if (open) setMobileMenu(false);
         }
+
+        function setMobileMenu(open) {
+            nav.classList.toggle("is-menu-open", open);
+            menuButton.setAttribute("aria-expanded", String(open));
+            menuButton.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+        }
+
+        menuButton.addEventListener("click", () => {
+            const shouldOpen = !nav.classList.contains("is-menu-open");
+            setMobileMenu(shouldOpen);
+            if (shouldOpen) setPanel(false);
+        });
 
         contactButton.addEventListener("click", () => {
             setPanel(panel.hidden);
         });
 
         document.addEventListener("click", (event) => {
-            if (panel.hidden) return;
-            if (panel.contains(event.target) || contactButton.contains(event.target)) return;
-            setPanel(false);
+            if (!panel.hidden && !panel.contains(event.target) && !contactButton.contains(event.target)) {
+                setPanel(false);
+            }
+            if (nav.classList.contains("is-menu-open") && !nav.contains(event.target)) {
+                setMobileMenu(false);
+            }
         });
 
         document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && !panel.hidden) {
+            if (event.key !== "Escape") return;
+            if (!panel.hidden) {
                 setPanel(false);
                 contactButton.focus();
+            } else if (nav.classList.contains("is-menu-open")) {
+                setMobileMenu(false);
+                menuButton.focus();
             }
         });
     }

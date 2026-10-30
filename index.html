@@ -3,27 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My First HTML Page</title>
-    <link rel="icon"  href="favicon_32x32.jpg" type="image/x-icon">
+    <meta name="theme-color" content="#101c2d">
+    <meta name="description" content="Jeter Zhou's little corner of the internet — projects, experiments, and things made for fun.">
+    <title>Jeter Zhou — Building Things for the Web</title>
+    <link rel="icon" href="favicon_32x32.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="site-nav.js" defer></script>
 </head>
+<body class="home-page">
+    <a class="home-skip-link" href="#work">Skip to projects</a>
 
-<body>
-    <main>
-        <h1>This is my first HTML page</h1>
-        <h2>Welcome to JeterZhou's Webpage!</h2>
-        <a href="https://learn.hibiuh.edu.cn/login/ldap" target="_blank"> 
-            <img src="shlirk.png" width="300px" alt="Cartoon character holding a cup">
-        </a>
+    <main id="main-content" class="home-main">
+        <!-- Full-screen, cinematic hero. The wallpaper is set in styles.css. -->
+        <section class="home-hero" id="top" aria-labelledby="home-title">
+            <div class="home-hero__inner">
+                <div class="home-hero__copy">
+                    <p class="home-hero__eyebrow"><span class="home-hero__eyebrow-line" aria-hidden="true"></span> JETER ZHOU <span class="home-hero__eyebrow-divider" aria-hidden="true">/</span> PERSONAL SPACE</p>
+                    <h1 id="home-title">Hey, I'm<br><span>Jeter.</span></h1>
+                    <p class="home-hero__description">Building things. Learning as I go.</p>
+                    <a class="home-hero__button" href="#work">
+                        Explore my work
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                </div>
+            </div>
+            <a class="home-hero__scroll" href="#work" aria-label="Scroll to projects">
+                <span class="home-hero__scroll-line" aria-hidden="true"></span>
+                <span>SCROLL TO EXPLORE</span>
+            </a>
+            <p class="home-hero__corner">A LITTLE CORNER OF THE INTERNET <span aria-hidden="true">✳</span></p>
+        </section>
 
-        <p>I am very excited to learn HTML and create my own web pages.<a href = "quotes.html" target="_blank">click here</a></p>
+        <!-- Light, spacious project section: no extra decorative photos. -->
+        <section class="home-work" id="work" aria-labelledby="home-work-title">
+            <div class="home-container">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-kicker"><span aria-hidden="true">✦</span> SELECTED PAGES</p>
+                        <h2 id="home-work-title">Things I've made<span class="home-heading-dot">.</span></h2>
+                    </div>
+                    <p class="home-section-heading__aside">Some useful. Some just for fun.</p>
+                </div>
+
+                <div class="home-work__grid">
+                    <a class="home-project-card home-project-card--quotes" href="quotes.html" aria-label="Explore Quotes">
+                        <div class="home-project-card__top"><span>01 / WORDS</span><span class="home-project-card__arrow" aria-hidden="true">↗</span></div>
+                        <div class="home-project-card__art" aria-hidden="true">
+                            <svg viewBox="0 0 90 90" fill="none"><path d="M18 51c0-16 9-26 26-29v9c-9 2-13 7-14 14h14v22H18V51Zm32 0c0-16 9-26 26-29v9c-9 2-13 7-14 14h14v22H50V51Z" fill="currentColor"/></svg>
+                        </div>
+                        <div class="home-project-card__bottom"><h3>Quotes</h3><p>A few words worth keeping.</p></div>
+                    </a>
+
+                    <a class="home-project-card home-project-card--projects" href="project.html" aria-label="Explore Projects">
+                        <div class="home-project-card__top"><span>02 / BUILDING</span><span class="home-project-card__arrow" aria-hidden="true">↗</span></div>
+                        <div class="home-project-card__art" aria-hidden="true">
+                            <svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="17" width="25" height="25" rx="6"/><rect x="54" y="17" width="25" height="25" rx="6"/><rect x="17" y="54" width="25" height="25" rx="6"/><path d="M54 67h25M66.5 54v25"/></svg>
+                        </div>
+                        <div class="home-project-card__bottom"><h3>Projects</h3><p>Ideas turned into something real.</p></div>
+                    </a>
+
+                    <a class="home-project-card home-project-card--machine" href="machine.html" aria-label="Explore Useless Machine">
+                        <div class="home-project-card__top"><span>03 / EXPERIMENTS</span><span class="home-project-card__arrow" aria-hidden="true">↗</span></div>
+                        <div class="home-project-card__art" aria-hidden="true">
+                            <svg viewBox="0 0 96 96" fill="none"><rect x="12" y="29" width="72" height="38" rx="19" stroke="currentColor" stroke-width="6"/><circle cx="34" cy="48" r="13" fill="currentColor"/></svg>
+                        </div>
+                        <div class="home-project-card__bottom"><h3>Useless Machine</h3><p>Unnecessary, but delightful.</p></div>
+                    </a>
+                </div>
+
+                <div class="home-about" id="about">
+                    <p>Still learning. Always building.</p>
+                    <a href="https://github.com/JeterZhou" target="_blank" rel="noopener noreferrer">Find me on GitHub <span aria-hidden="true">↗</span></a>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <footer class="home-footer">
+        <div class="home-container home-footer__inner">
+            <span>© <span id="copyrightYear">2026</span> Jeter Zhou</span>
+            <span>Made with curiosity <span class="home-footer__star" aria-hidden="true">✳</span></span>
+            <a href="#top">Back to top ↑</a>
+        </div>
+    </footer>
+    <script>document.getElementById('copyrightYear').textContent = new Date().getFullYear();</script>
 </body>
 </html>
-
-
-
 
 
 
